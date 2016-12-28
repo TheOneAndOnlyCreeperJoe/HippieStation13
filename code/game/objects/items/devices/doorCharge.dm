@@ -15,6 +15,7 @@
 	switch(severity)
 		if(1)
 			visible_message("<span class='warning'>[src] detonates!</span>")
+			message_admins("A door charge has exploded atX=[location.x];Y=[location.y];Z=[location.z]; last touched by [key_name_admin(last)]")
 			explosion(src.loc,0,2,1,flame_range = 4)
 			qdel(src)
 		if(2)
