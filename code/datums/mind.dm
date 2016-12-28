@@ -190,6 +190,9 @@
 /datum/mind/proc/remove_hog_follower_prophet()
 	ticker.mode.remove_hog_follower(src)
 
+/datum/mind/proc/remove_vampire()
+	ticker.mode.remove_vampire
+
 /datum/mind/proc/remove_antag_equip()
 	var/list/Mob_Contents = current.get_contents()
 	for(var/obj/item/I in Mob_Contents)
@@ -211,6 +214,7 @@
 	remove_malf()
 	remove_gang()
 	remove_hog_follower_prophet()
+	remove_vampire()
 
 /datum/mind/proc/show_memory(mob/recipient, window=1)
 	if(!recipient)
@@ -249,7 +253,8 @@
 		"abductor",
 		"monkey",
 		"malfunction",
-		"hog"
+		"hog",
+		"vampire"
 	)
 	var/text = ""
 
@@ -630,6 +635,25 @@
 	out += "<a href='?src=\ref[src];obj_announce=1'>Announce objectives</a><br><br>"
 
 	usr << browse(out, "window=edit_memory[src];size=500x600")
+
+	/** VAMPIRE ***/
+	text = "vampire"
+	if (ticker.mode.config_tag=="vampire")
+		text = uppertext(text)
+	text = "<i><b>[text]</b></i>: "
+	if (src in ticker.mode.vampire)
+		text += "<b>VAMPIRE</b>|<a href='?src=\ref[src];vampire=clear'>human</a>"
+		if (objectives.len==0)
+			text += "<br>Objectives are empty! <a href='?src=\ref[src];vampire=autoobjectives'>Randomize</a>!"
+	else
+		text += "<a href='?src=\ref[src];vampire=vampire'>vampire</a>|<b>LOYAL</b>"
+
+	if(current && current.client && (ROLE_VAMPIRE in current.client && current.client.prefs.be_special))
+		text += "|Enabled in Prefs"
+	else
+		text += "|Disabled in Prefs"
+
+	sections["vampire"] = text
 
 /datum/mind/Topic(href, href_list)
 	if(!check_rights(R_ADMIN))	return
@@ -1154,6 +1178,26 @@
 			message_admins("[key_name_admin(usr)] has god'ed [current].")
 			log_admin("[key_name(usr)] has god'ed [current].")
 
+	else if (href_list["vampire"])
+		switch(href_list["vampire"])
+			if("clear")
+				remove_vampire()
+				current << "<span class='userdanger'>Lilith's blessing leaves you! You are no longer a vampire!</span>"
+				message_admins("[key_name_admin(usr)] has de-vampirized [current].")
+				log_admin("[key_name(usr)] has de-vampirized [current].")
+
+			if("vampire")
+				if(!(src in ticker.mode.vampire))
+					ticker.mode.vampires += src
+					special_role = "vampire"
+					current << "<span class='boldannounce'>You are a vampire!</span>"
+					message_admins("[key_name_admin(usr)] has vampired [current].")
+					log_admin("[key_name(usr)] has vampired [current].")
+
+			if("autoobjectives")
+				ticker.mode.forge_vampire_objectives(src)
+				usr << "<span class='notice'>The objectives for vampre [key] have been generated. You can edit them and anounce manually.</span>"
+
 	else if (href_list["common"])
 		switch(href_list["common"])
 			if("undress")
@@ -1436,6 +1480,13 @@
 	ticker.mode.add_god(src, colour)
 	ticker.mode.forge_deity_objectives(src)
 	return 1
+
+/datum/mind/proc/make_Vampire()
+	if(!(src in ticker.mode.vampires))
+		ticker.mode.vampires += src
+		special_role = "vampire"
+		src.make_mob_into_vampire()
+		src.grant_vampire_objectives()
 
 /datum/mind/proc/AddSpell(obj/effect/proc_holder/spell/spell)
 	spell_list += spell
