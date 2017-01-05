@@ -1,0 +1,3 @@
+changes: 
+  - rscadd: "Added a changelog editing system that should cause fewer conflicts and more accurate timestamps."
+  - rscdel: "Killed innocent kittens."
